@@ -10,16 +10,18 @@ namespace DAC_Model.OS
 {
     public enum UserType { User, Admin }
 
-    class UserSubject : IOsSubject, IComparable
+    class UserSubject : IComparable
     {
         public int Id { get; set; }
-        public string Name;
+        public int AccessLevel { get; set; }
+        public string Name { get; set; }
         public string Password;
         public UserType Type;
 
-        public UserSubject(int id, string name, string password, UserType type)
+        public UserSubject(int id, int level, string name, string password, UserType type)
         {
             Id = id;
+            AccessLevel = level;
             Name = name;
             Password = password;
             Type = type;
@@ -72,8 +74,8 @@ namespace DAC_Model.OS
             foreach (var line in data.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 var words = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                Users.Add(new UserSubject(int.Parse(words[0]), words[1],
-                                            words[2], (UserType)int.Parse(words[3])));
+                Users.Add(new UserSubject(int.Parse(words[0]), int.Parse(words[1]), words[2],
+                                            words[3], (UserType)int.Parse(words[4])));
             }
             uidCounter = Users.Count > 0 ? Users[Users.Count - 1].Id + 1 : 0;
         }
@@ -81,7 +83,7 @@ namespace DAC_Model.OS
         {
             var sb = new StringBuilder();
             foreach (var user in Users)
-                sb.AppendLine($"{user.Id} {user.Name} {user.Password} {(int)user.Type}");
+                sb.AppendLine($"{user.Id} {user.AccessLevel} {user.Name} {user.Password} {(int)user.Type}");
             core.Fs.SysWrite(datafile, sb.ToString());
         }
         public void Uninit()
@@ -110,13 +112,8 @@ namespace DAC_Model.OS
             if (!Regex.IsMatch(password, @"^[a-zA-Z0-9]{5,30}$"))
                 throw new UserMgrException("Пароль имеет неверный формат");
 
-            var user = new UserSubject(uidCounter++, name, password, type);
+            var user = new UserSubject(uidCounter++, 0, name, password, type);
             Users.Add(user);
-
-            // если админ, то устанавливаем права для всех файлов
-            if (user.Type == UserType.Admin)
-                foreach (var file in core.Fs.Files)
-                    core.RMon.Set(user, AccessRights.Full, file);
 
             return user;
         }
@@ -140,7 +137,7 @@ namespace DAC_Model.OS
         }
     }
 
-    class UserMgrException : Exception
+    class UserMgrException : OsException
     {
         public UserMgrException(string message) : base(message) { }
     }

@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace DAC_Model.OS
 {
-    interface IOsSubject
+    class OsException : Exception
     {
-        int Id { get; set; }
+        public OsException(string message) : base(message)
+        {
+
+        }
     }
 }

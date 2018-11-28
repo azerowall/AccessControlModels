@@ -10,14 +10,16 @@ using System.Collections.Specialized;
 
 namespace DAC_Model.OS
 {
-    class FileObject : IOsObject, IComparable
+    class FileObject : IComparable
     {
         public int Id { get; set; }
-        public string Path;
+        public int AccessLevel { get; set; }
+        public string Path { get; set; }
 
-        public FileObject(int id, string path)
+        public FileObject(int id, int level, string path)
         {
             Id = id;
+            AccessLevel = level;
             Path = path;
         }
 
@@ -35,8 +37,7 @@ namespace DAC_Model.OS
         static readonly string datafile = "files.os";
         public static readonly string SysDir = "sys";
         Core core;
-
-        //List<FileObject> files;
+        
         int idCounter;
 
         public ObservableCollection<FileObject> Files
@@ -79,7 +80,7 @@ namespace DAC_Model.OS
             foreach (var line in data.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 var words = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                Files.Add(new FileObject(int.Parse(words[0]), words[1]));
+                Files.Add(new FileObject(int.Parse(words[0]), int.Parse(words[1]), words[2]));
             }
             idCounter = (Files.Count > 0) ? Files[Files.Count - 1].Id + 1 : 0;
         }
@@ -88,7 +89,7 @@ namespace DAC_Model.OS
         {
             var sb = new StringBuilder();
             foreach (var file in Files)
-                sb.AppendLine($"{file.Id} {file.Path}");
+                sb.AppendLine($"{file.Id} {file.AccessLevel} {file.Path}");
             SysWrite(datafile, sb.ToString());
         }
 
@@ -133,16 +134,11 @@ namespace DAC_Model.OS
         {
             CheckFileName(path);
 
-            Files.Add(new FileObject(idCounter++, path));
+            Files.Add(new FileObject(idCounter++, core.CurrentUser.AccessLevel, path));
             var file = Files[Files.Count - 1];
 
-            // задаем все права владельцу
-            core.RMon.Set(core.CurrentUser, AccessRights.Full, file);
-
-            // задаем права для всех админов в системе
-            var admins = core.Umgr.Users.Where(u => u.Type == UserType.Admin);
-            foreach (var admin in admins)
-                core.RMon.Set(admin, AccessRights.Full, file);
+            // уровень созданного файла == уровню владельца
+            //core.RMon.Set(file, core.RMon.GetLevel(file));
 
             File.Create(Path.Combine(core.Root, path)).Close();
 
@@ -168,8 +164,10 @@ namespace DAC_Model.OS
 
             // простой установки имени не происходит
             // т.к. нужно, чтобы коллекция заметила изменения
+            file.Path = newName;
             int i = Files.IndexOf(file);
-            Files[i] = new FileObject(file.Id, newName);
+            Files[i] = null;
+            Files[i] = file;
         }
 
         private void CheckFileName(string path)
@@ -181,7 +179,7 @@ namespace DAC_Model.OS
         }
     }
 
-    class FileSystemException : Exception
+    class FileSystemException : OsException
     {
         public FileSystemException(string message) : base(message) { }
     }

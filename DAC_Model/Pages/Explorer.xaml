@@ -13,10 +13,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
             <TextBlock Text="{Binding CurrentUser}" FontSize="16" />
@@ -42,22 +38,6 @@
                     </ContextMenu>
                 </ListBox.ContextMenu>
             </ListBox>
-        </GroupBox>
-
-        <GroupBox Grid.Row="1" Grid.Column="1">
-            <GroupBox.Header>
-                <!-- Так сделал для того, чтобы не было странностей с отображением при CurrentFile == null -->
-                <TextBlock Text="{Binding CurrentFile}" />
-            </GroupBox.Header>
-            <TextBox Text="{Binding FileData, UpdateSourceTrigger=PropertyChanged}"
-                     IsEnabled="{Binding HasOpenedFile}"
-                     AcceptsReturn="True" AcceptsTab="True" TextWrapping="WrapWithOverflow"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto">
-                <TextBox.InputBindings>
-                    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveFileCommand}" />
-                    <KeyBinding Key="Esc" Command="{Binding CloseFileCommand}" />
-                </TextBox.InputBindings>
-            </TextBox>
         </GroupBox>
     </Grid>
 </Page>

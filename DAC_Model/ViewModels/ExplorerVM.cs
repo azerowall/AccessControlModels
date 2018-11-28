@@ -11,11 +11,9 @@ namespace DAC_Model.ViewModels
     class ExplorerVM : BaseVM
     {
         OS.Core os;
-
-        public Commands.DelegateCommand SaveFileCommand { get; private set; }
+        
         public Commands.DelegateCommand OpenFileCommand { get; private set; }
         public Commands.DelegateCommand CreateFileCommand { get; private set; }
-        public Commands.DelegateCommand CloseFileCommand { get; private set; }
         public Commands.DelegateCommand RenameFileCommand { get; private set; }
         public Commands.DelegateCommand RemoveFileCommand { get; private set; }
         public Commands.DelegateCommand NavigateCommand { get; private set; }
@@ -23,10 +21,8 @@ namespace DAC_Model.ViewModels
         public ExplorerVM()
         {
             os = OsService.GetOS();
-            SaveFileCommand = new Commands.DelegateCommand(SaveFile, o => CurrentFile != null);
             OpenFileCommand = new Commands.DelegateCommand(OpenFile);
             CreateFileCommand = new Commands.DelegateCommand(CreateFile);
-            CloseFileCommand = new Commands.DelegateCommand(CloseFile);
             RenameFileCommand = new Commands.DelegateCommand(RenameFile);
             RemoveFileCommand = new Commands.DelegateCommand(RemoveFile);
             NavigateCommand = new Commands.DelegateCommand(Navigate);
@@ -40,7 +36,7 @@ namespace DAC_Model.ViewModels
 
         public string FileName { get; set; }
 
-        IEnumerable<OS.FileObject> files;
+        /*IEnumerable<OS.FileObject> files;
         public IEnumerable<OS.FileObject> Files
         {
             get
@@ -58,40 +54,13 @@ namespace DAC_Model.ViewModels
         {
             //Files = os.Fs.Files.Where(f => os.RMon.Can(os.CurrentUser, OS.AccessRights.Read, f));
             OnPropertyChanged("Files");
+        }*/
+        public ObservableCollection<OS.FileObject> Files
+        {
+            get { return os.Fs.Files; }
         }
 
         public OS.FileObject SelectedFile { get; set; }
-
-        OS.FileObject currentFile;
-        public OS.FileObject CurrentFile
-        {
-            get { return currentFile; }
-            set
-            {
-                currentFile = value;
-                OnPropertyChanged("CurrentFile");
-                SaveFileCommand.RaiseCanExecuteChanged();
-            }
-        }
-
-        bool hasOpenedFile;
-        public bool HasOpenedFile
-        {
-            get { return hasOpenedFile; }
-            set { hasOpenedFile = value; OnPropertyChanged("HasOpenedFile"); }
-        }
-
-        string fileData;
-        public string FileData
-        {
-            get { return fileData; }
-            set
-            {
-                fileData = value;
-                OnPropertyChanged("FileData");
-            }
-        }
-
 
 
         void CreateFile(object o)
@@ -101,54 +70,31 @@ namespace DAC_Model.ViewModels
                 string res = InputDialogService.Show("Создание файла", "Введите имя файла");
                 if (res != null)
                     os.Fs.Create(res);
-                UpdateFilesList();
+                //UpdateFilesList();
             }
-            catch (OS.FileSystemException e)
+            catch (OS.OsException e)
             {
                 MessageBox.Show(e.Message);
-            }
-            catch (OS.HasNoRightsException)
-            {
-                MessageBox.Show("Недостаточно прав");
             }
         }
         void OpenFile(object o)
         {
             try
             {
-                var file = SelectedFile;
-                FileData = os.Fs.Read(file);
-                CurrentFile = file;
-                HasOpenedFile = true;
+                if (SelectedFile == null) return;
+                string fileData;
+                if (os.RMon.Can(os.CurrentUser, OS.AccessRights.Read, SelectedFile))
+                    fileData = os.Fs.Read(SelectedFile);
+                else
+                    fileData = string.Empty;
+                
+                string r = EditFileDialogService.Show(SelectedFile.Path, fileData);
+                if (r != null)
+                    os.Fs.Write(SelectedFile, r);
             }
-            catch (OS.FileSystemException e)
+            catch (OS.OsException e)
             {
                 MessageBox.Show(e.Message);
-            }
-            catch (OS.HasNoRightsException)
-            {
-                MessageBox.Show("Недостаточно прав");
-            }
-        }
-        void CloseFile(object o)
-        {
-            HasOpenedFile = false;
-            FileData = string.Empty;
-            CurrentFile = null;
-        }
-        void SaveFile(object o)
-        {
-            try
-            {
-                os.Fs.Write(CurrentFile, FileData);
-            }
-            catch(OS.FileSystemException e)
-            {
-                MessageBox.Show(e.Message);
-            }
-            catch (OS.HasNoRightsException)
-            {
-                MessageBox.Show("Недостаточно прав");
             }
         }
 
@@ -156,18 +102,16 @@ namespace DAC_Model.ViewModels
         {
             try
             {
+                if (SelectedFile == null)
+                    return;
                 string newName = InputDialogService.Show("Переименование файла", "Введите новое имя");
                 if (newName != null)
                     os.Fs.Rename(SelectedFile, newName);
-                UpdateFilesList();
+                //UpdateFilesList();
             }
-            catch (OS.FileSystemException e)
+            catch (OS.OsException e)
             {
                 MessageBox.Show(e.Message);
-            }
-            catch (OS.HasNoRightsException)
-            {
-                MessageBox.Show("Недостаточно прав");
             }
         }
 
@@ -176,19 +120,13 @@ namespace DAC_Model.ViewModels
             try
             {
                 os.Fs.Remove(SelectedFile);
-                UpdateFilesList();
+                //UpdateFilesList();
             }
-            catch (OS.FileSystemException e)
+            catch (OS.OsException e)
             {
                 MessageBox.Show(e.Message);
             }
-            catch (OS.HasNoRightsException)
-            {
-                MessageBox.Show("Недостаточно прав");
-            }
         }
-
-
 
         void Navigate(object o)
         {

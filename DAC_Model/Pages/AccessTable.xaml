@@ -20,37 +20,26 @@
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding AccessRights}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="{Binding ColumnsCount}" HorizontalAlignment="Left" VerticalAlignment="Top"  />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border BorderBrush="Gray" BorderThickness="1" Padding="3">
-                            <TextBlock Text="{Binding}" />
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+            <StackPanel Orientation="Horizontal">
+                <DataGrid x:Name="dgUsers" ItemsSource="{Binding Users}"
+                          AutoGenerateColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Name}" IsReadOnly="True" Header="Пользователь" />
+                        <DataGridTextColumn Binding="{Binding AccessLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Header="Уровень доступа" />
+                    </DataGrid.Columns>
+                </DataGrid>
 
-        <WrapPanel Orientation="Horizontal" Grid.Row="2">
-            <Label Content="Пользователь" />
-            <ComboBox ItemsSource="{Binding Users}" SelectedIndex="0"
-                      SelectedValue="{Binding SelectedUser, UpdateSourceTrigger=PropertyChanged}" />
-            <Label Content="Объект" />
-            <ComboBox ItemsSource="{Binding Files}" SelectedIndex="0"
-                      SelectedValue="{Binding SelectedFile, UpdateSourceTrigger=PropertyChanged}"/>
-            <Label Content="Права" />
-            <StackPanel>
-                <CheckBox Content="Чтение" IsChecked="{Binding IsReadAccess, UpdateSourceTrigger=PropertyChanged}" />
-                <CheckBox Content="Запись" IsChecked="{Binding IsWriteAccess, UpdateSourceTrigger=PropertyChanged}" />
-                <CheckBox Content="Удаление" IsChecked="{Binding IsRemoveAccess, UpdateSourceTrigger=PropertyChanged}" />
+                <DataGrid x:Name="dgFiles" ItemsSource="{Binding Files}"
+                          AutoGenerateColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Path}" IsReadOnly="True" Header="Файл" />
+                        <DataGridTextColumn Binding="{Binding AccessLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Header="Уровень доступа" />
+                    </DataGrid.Columns>
+                </DataGrid>
             </StackPanel>
-            <Button Content="Установить" Command="{Binding SetRightCommand}" />
-        </WrapPanel>
+        </ScrollViewer>
     </Grid>
 
 </Page>

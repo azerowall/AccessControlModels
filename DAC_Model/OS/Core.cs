@@ -10,7 +10,7 @@ namespace DAC_Model.OS
     class Core
     {
         public string Root;
-        public HRURefMonitor RMon;
+        public RefMonitor RMon;
 
         public FileSystem Fs;
         public UserMgr Umgr;
@@ -23,7 +23,7 @@ namespace DAC_Model.OS
             Root = root;
             Fs = new FileSystem(this);
             Log = new Logger(this);
-            RMon = new HRURefMonitor(this);
+            RMon = new RefMonitor(this);
             Umgr = new UserMgr(this);
         }
 

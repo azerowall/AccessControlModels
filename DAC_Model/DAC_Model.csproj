@@ -56,13 +56,18 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Commands\DelegateCommand.cs" />
+    <Compile Include="OS\OsException.cs" />
     <Compile Include="Pages\AccessTable.xaml.cs">
       <DependentUpon>AccessTable.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\Explorer.xaml.cs">
       <DependentUpon>Explorer.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Services\EditFileDialogService.cs" />
     <Compile Include="ViewModels\AccessTableVM.cs" />
+    <Compile Include="Windows\EditFileDialog.xaml.cs">
+      <DependentUpon>EditFileDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Windows\InputDialogBox.xaml.cs">
       <DependentUpon>InputDialogBox.xaml</DependentUpon>
     </Compile>
@@ -97,6 +102,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Windows\EditFileDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Windows\InputDialogBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -105,9 +114,7 @@
   <ItemGroup>
     <Compile Include="OS\Core.cs" />
     <Compile Include="OS\Modules\FileSystem.cs" />
-    <Compile Include="OS\Modules\HRURefMonitor.cs" />
-    <Compile Include="OS\IOsObject.cs" />
-    <Compile Include="OS\IOsSubject.cs" />
+    <Compile Include="OS\Modules\RefMonitor.cs" />
     <Compile Include="OS\Modules\Logger.cs" />
     <Compile Include="OS\Modules\UserMgr.cs" />
     <Compile Include="Pages\Login.xaml.cs">
