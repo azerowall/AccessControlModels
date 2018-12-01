@@ -38,13 +38,8 @@ namespace DAC_Model.OS
             if (RMon.Roles.Count == 0)
             {
                 var admr = RMon.AddRole("Администратор");
-                RMon.AddRole("Пользователь");
                 RMon.AddRoleToUser(Umgr.GetUserSubject("admin"), admr);
             }
-
-            // изменить все на json
-            // проверить парсинг dictionary<int, ...> при указании типа
-            // в объекте юзера сохранять последнюю выбранную им роль
         }
 
         public void Exit()
@@ -57,16 +52,6 @@ namespace DAC_Model.OS
 
         public IEnumerable<UserRole> GetUserRoles() =>
             RMon.GetUserRoles(CurrentUser.Id);
-
-        // ============= Sessions
-
-        //public bool HasSavedSession() => Sessions.HasSession(SessionId);
-        //public void RecoverySession() => Sessions.
-        //void SaveSession() => CurrentUser.RoleId = CurrentUserRole.Id;
-        //void RemoveSession() => CurrentUser.RoleId = -1;
-
-
-        // ============= End of Sessions
 
 
         public void Login(string user, string password)
