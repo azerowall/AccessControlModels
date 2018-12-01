@@ -8,18 +8,18 @@ using System.Text.RegularExpressions;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 
+using Newtonsoft.Json;
+
 namespace DAC_Model.OS
 {
     class FileObject : IComparable
     {
-        public int Id { get; set; }
-        public int AccessLevel { get; set; }
-        public string Path { get; set; }
+        public int Id;
+        public string Path;
 
-        public FileObject(int id, int level, string path)
+        public FileObject(int id, string path)
         {
             Id = id;
-            AccessLevel = level;
             Path = path;
         }
 
@@ -37,8 +37,6 @@ namespace DAC_Model.OS
         static readonly string datafile = "files.os";
         public static readonly string SysDir = "sys";
         Core core;
-        
-        int idCounter;
 
         public ObservableCollection<FileObject> Files
         {
@@ -54,54 +52,37 @@ namespace DAC_Model.OS
 
         private void InitFS()
         {
-            try
-            {
-                LoadFS();
-            }
-            catch (Exception e)
-            {
-                if (!Directory.Exists(core.Root))
-                    Directory.CreateDirectory(core.Root);
-                string sysdir = Path.Combine(core.Root, SysDir);
-                if (!Directory.Exists(sysdir))
-                    Directory.CreateDirectory(sysdir);
-                SysWrite(datafile, "");
-                idCounter = 0;
-            }
+            if (!Directory.Exists(core.Root))
+                Directory.CreateDirectory(core.Root);
+            if (!Directory.Exists(Path.Combine(core.Root, SysDir)))
+                Directory.CreateDirectory(Path.Combine(core.Root, SysDir));
+
+            var path = GetSysPath(datafile);
+            if (!File.Exists(path))
+                File.Create(path).Close();
+
+            Files = JsonConvert.DeserializeObject<ObservableCollection<FileObject>>(File.ReadAllText(path));
+            Files = Files != null ? Files : new ObservableCollection<FileObject>();
         }
         public void Uninit()
         {
-            SaveFS();
+            File.WriteAllText(core.Fs.GetSysPath(datafile),
+                JsonConvert.SerializeObject(Files));
         }
 
-        private void LoadFS()
+        public string GetSysPath(string filename)
         {
-            string data = SysRead(datafile);
-            foreach (var line in data.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+            return Path.Combine(core.Root, SysDir, filename);
+        }
+
+        string GetPath(string filename)
+        {
+            string path = core.Sessions.GetPath(core.SessionId, filename);
+            if (!File.Exists(path))
             {
-                var words = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                Files.Add(new FileObject(int.Parse(words[0]), int.Parse(words[1]), words[2]));
+                path = Path.Combine(core.Root, filename);
             }
-            idCounter = (Files.Count > 0) ? Files[Files.Count - 1].Id + 1 : 0;
-        }
-
-        private void SaveFS()
-        {
-            var sb = new StringBuilder();
-            foreach (var file in Files)
-                sb.AppendLine($"{file.Id} {file.AccessLevel} {file.Path}");
-            SysWrite(datafile, sb.ToString());
-        }
-
-        // работа с системными файлами - проверки прав нет,
-        // т.к. эти функции не предназначены для пользователя
-        public string SysRead(string filename)
-        {
-            return File.ReadAllText(Path.Combine(core.Root, SysDir, filename));
-        }
-        public void SysWrite(string filename, string data)
-        {
-            File.WriteAllText(Path.Combine(core.Root, SysDir, filename), data);
+            return path;
         }
 
         public FileObject GetFileObject(string path)
@@ -118,46 +99,61 @@ namespace DAC_Model.OS
 
         public void Write(FileObject file, string data)
         {
-            core.RMon.Check(core.CurrentUser, AccessRights.Write, file);
+            core.CheckAccess(file, AccessRights.Write);
+
+            string path = core.Sessions.GetPath(core.SessionId, file.Path);
+            if (!File.Exists(path))
+            {
+                // при изменении файла добавляем его в сессию, если он еще не там
+                File.Copy(Path.Combine(core.Root, file.Path), path);
+            }
+
+            File.WriteAllText(path, data);
+
             core.Log.Info($"{core.CurrentUser} изменил файл {file}");
-            File.WriteAllText(Path.Combine(core.Root, file.Path), data);
         }
 
         public string Read(FileObject file)
         {
-            core.RMon.Check(core.CurrentUser, AccessRights.Read, file);
+            core.CheckAccess(file, AccessRights.Read);
             core.Log.Info($"{core.CurrentUser} прочитал файл {file}");
-            return File.ReadAllText(Path.Combine(core.Root, file.Path));
+            if (!File.Exists(GetPath(file.Path)))
+                return string.Empty;
+            return File.ReadAllText(GetPath(file.Path));
         }
 
         public FileObject Create(string path)
         {
             CheckFileName(path);
 
-            Files.Add(new FileObject(idCounter++, core.CurrentUser.AccessLevel, path));
+            int id = Files.Count > 0 ? Files[Files.Count - 1].Id + 1 : 0;
+
+            Files.Add(new FileObject(id, path));
             var file = Files[Files.Count - 1];
 
-            // уровень созданного файла == уровню владельца
-            //core.RMon.Set(file, core.RMon.GetLevel(file));
+            // фулл права для владельца файла
+            core.RMon.SetRights(core.CurrentUserRole, AccessRights.Full, file);
 
-            File.Create(Path.Combine(core.Root, path)).Close();
+            File.Create(core.Sessions.GetPath(core.SessionId, file.Path)).Close();
 
             core.Log.Info($"{core.CurrentUser} создал файл {file}");
 
             return file;
         }
 
+        // не переделан под сессии
         public void Remove(FileObject file)
         {
-            core.RMon.Check(core.CurrentUser, AccessRights.Remove, file);
+            core.CheckAccess(file, AccessRights.Write);
             File.Delete(Path.Combine(core.Root, file.Path));
             Files.Remove(file);
             core.Log.Info($"{core.CurrentUser} удалил файл {file}");
         }
 
+        // не переделан под сессии
         public void Rename(FileObject file, string newName)
         {
-            core.RMon.Check(core.CurrentUser, AccessRights.Write, file);
+            core.CheckAccess(file, AccessRights.Write);
             CheckFileName(newName);
 
             File.Move(Path.Combine(core.Root, file.Path), Path.Combine(core.Root, newName));
@@ -174,7 +170,7 @@ namespace DAC_Model.OS
         {
             if (Files.Any(f => f.Path == path))
                 throw new FileSystemException($"Файл - \"{path}\" уже существует");
-            if (!Regex.IsMatch(path, @"^[a-zа-я0-9\._-]+$", RegexOptions.IgnoreCase))
+            if (!Regex.IsMatch(path, @"^[a-zа-я0-9 \._-]+$", RegexOptions.IgnoreCase))
                 throw new FileSystemException($"Файл - \"{path}\" содержит зарпещенные символы");
         }
     }

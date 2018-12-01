@@ -16,9 +16,63 @@ namespace DAC_Model.ViewModels
             //SetRightCommand = new Commands.DelegateCommand(SetRight);
             BackCommand = new Commands.DelegateCommand(o =>
                                 NavigationService.Navigate(NavigationService.ExplorerPage));
+            AddRoleCommand = new Commands.DelegateCommand(o =>
+                                    {
+                                        OsService.GetOS().RMon.AddRole(RoleName);
+                                        RoleName = string.Empty;
+                                        OnPropertyChanged("Roles");
+                                    });
+            RemoveRoleCommand = new Commands.DelegateCommand(o =>
+            {
+                OsService.GetOS().RMon.RemoveRole(SelectedRole);
+                OnPropertyChanged("Roles");
+                OnPropertyChanged("UsersRoles");
+            });
+
+            AddRoleToUserCommand = new Commands.DelegateCommand(o =>
+            {
+                OsService.GetOS().RMon.AddRoleToUser(SelectedUser, SelectedUserRole);
+                OnPropertyChanged("UsersRoles");
+            });
+            RemoveRoleFromUserCommand = new Commands.DelegateCommand(o =>
+            {
+                OsService.GetOS().RMon.RemoveRoleFromUser(SelectedUser, SelectedUserRole);
+                OnPropertyChanged("UsersRoles");
+            });
         }
 
         public Commands.DelegateCommand BackCommand { get; private set; }
+        public Commands.DelegateCommand AddRoleCommand { get; private set; }
+        public Commands.DelegateCommand RemoveRoleCommand { get; private set; }
+        public Commands.DelegateCommand AddRoleToUserCommand { get; private set; }
+        public Commands.DelegateCommand RemoveRoleFromUserCommand { get; private set; }
+
+
+        string roleName;
+        public string RoleName
+        {
+            get { return roleName; }
+            set { roleName = value; OnPropertyChanged("RoleName"); }
+        }
+        public OS.UserRole SelectedRole { get; set; }
+
+
+        public OS.UserSubject SelectedUser { get; set; }
+        public OS.UserRole SelectedUserRole { get; set; }
+
+
+        public IEnumerable<object[]> UsersRoles
+        {
+            get
+            {
+                var os = OsService.GetOS();
+                return os.Umgr.Users
+                    .Select(u => new object[] {
+                                u,
+                                string.Join(", ", os.RMon.GetUserRoles(u.Id))
+                            });
+            }
+        }
 
         /*
         public IEnumerable<string> AccessRights
@@ -55,14 +109,13 @@ namespace DAC_Model.ViewModels
             return table;
         }*/
 
-        public List<OS.UserSubject> Users
-        {
-            get { return OsService.GetOS().Umgr.Users; }
-        }
-        
-        public ObservableCollection<OS.FileObject> Files
-        {
-            get { return OsService.GetOS().Fs.Files; }
-        }
+        public IEnumerable<OS.UserRole> Roles =>
+            OsService.GetOS().RMon.Roles.Values.ToArray();
+
+        public List<OS.UserSubject> Users =>
+            OsService.GetOS().Umgr.Users;
+
+        public ObservableCollection<OS.FileObject> Files =>
+            OsService.GetOS().Fs.Files;
     }
 }

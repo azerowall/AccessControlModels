@@ -29,36 +29,16 @@ namespace DAC_Model.ViewModels
         }
 
 
-        public OS.UserSubject CurrentUser
-        {
-            get { return os.CurrentUser; }
-        }
+        public OS.UserSubject CurrentUser => os.CurrentUser;
+        public OS.UserRole CurrentUserRole => os.CurrentUserRole;
 
-        public string FileName { get; set; }
 
-        /*IEnumerable<OS.FileObject> files;
-        public IEnumerable<OS.FileObject> Files
-        {
-            get
-            {
-                files = os.Fs.Files.Where(f => os.RMon.Can(os.CurrentUser, OS.AccessRights.Read, f));
-                return files;
-            }
-            set
-            {
-                files = value;
-                OnPropertyChanged("Files");
-            }
-        }
-        private void UpdateFilesList()
-        {
-            //Files = os.Fs.Files.Where(f => os.RMon.Can(os.CurrentUser, OS.AccessRights.Read, f));
-            OnPropertyChanged("Files");
-        }*/
-        public ObservableCollection<OS.FileObject> Files
-        {
-            get { return os.Fs.Files; }
-        }
+        //public string FileName { get; set; }
+        
+        public IEnumerable<OS.FileObject> Files =>
+            os.Fs.Files.Where(f => os.HasAccess(f, OS.AccessRights.Read));
+
+        //public ObservableCollection<OS.FileObject> Files => os.Fs.Files;
 
         public OS.FileObject SelectedFile { get; set; }
 
@@ -70,7 +50,7 @@ namespace DAC_Model.ViewModels
                 string res = InputDialogService.Show("Создание файла", "Введите имя файла");
                 if (res != null)
                     os.Fs.Create(res);
-                //UpdateFilesList();
+                OnPropertyChanged("Files");
             }
             catch (OS.OsException e)
             {
@@ -83,7 +63,7 @@ namespace DAC_Model.ViewModels
             {
                 if (SelectedFile == null) return;
                 string fileData;
-                if (os.RMon.Can(os.CurrentUser, OS.AccessRights.Read, SelectedFile))
+                if (os.HasAccess(SelectedFile, OS.AccessRights.Read))
                     fileData = os.Fs.Read(SelectedFile);
                 else
                     fileData = string.Empty;
@@ -97,7 +77,7 @@ namespace DAC_Model.ViewModels
                 MessageBox.Show(e.Message);
             }
         }
-
+        
         void RenameFile(object o)
         {
             try
@@ -107,7 +87,7 @@ namespace DAC_Model.ViewModels
                 string newName = InputDialogService.Show("Переименование файла", "Введите новое имя");
                 if (newName != null)
                     os.Fs.Rename(SelectedFile, newName);
-                //UpdateFilesList();
+                OnPropertyChanged("Files");
             }
             catch (OS.OsException e)
             {
@@ -120,7 +100,7 @@ namespace DAC_Model.ViewModels
             try
             {
                 os.Fs.Remove(SelectedFile);
-                //UpdateFilesList();
+                OnPropertyChanged("Files");
             }
             catch (OS.OsException e)
             {
@@ -139,8 +119,12 @@ namespace DAC_Model.ViewModels
                         NavigationService.Navigate(NavigationService.AccessTablePage);
                     break;
                 case "Logout":
-                    os.Logout();
-                    NavigationService.Navigate(NavigationService.LoginPage);
+                    var mbres = MessageBox.Show("Выйти из сессии?", "Выход", MessageBoxButton.YesNoCancel);
+                    if (mbres != MessageBoxResult.Cancel)
+                    {
+                        os.Logout(mbres == MessageBoxResult.Yes);
+                        NavigationService.Navigate(NavigationService.LoginPage);
+                    }
                     break;
                 default:
                     MessageBox.Show((string)o);

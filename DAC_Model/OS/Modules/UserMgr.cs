@@ -6,22 +6,22 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.IO;
 
+using Newtonsoft.Json;
+
 namespace DAC_Model.OS
 {
     public enum UserType { User, Admin }
 
     class UserSubject : IComparable
     {
-        public int Id { get; set; }
-        public int AccessLevel { get; set; }
-        public string Name { get; set; }
+        public int Id;
+        public string Name;
         public string Password;
         public UserType Type;
 
-        public UserSubject(int id, int level, string name, string password, UserType type)
+        public UserSubject(int id, string name, string password, UserType type)
         {
             Id = id;
-            AccessLevel = level;
             Name = name;
             Password = password;
             Type = type;
@@ -41,8 +41,6 @@ namespace DAC_Model.OS
         static readonly string datafile = "users.os";
 
         Core core;
-        int uidCounter;
-
 
         public List<UserSubject> Users
         {
@@ -58,38 +56,18 @@ namespace DAC_Model.OS
 
         private void InitUsers()
         {
-            try
-            {
-                LoadUsers();
-            }
-            catch (FileNotFoundException)
-            {
-                uidCounter = 0;
-                Registrate("admin", "roottoor", UserType.Admin);
-            }
-        }
-        private void LoadUsers()
-        {
-            var data = core.Fs.SysRead(datafile);
-            foreach (var line in data.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var words = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                Users.Add(new UserSubject(int.Parse(words[0]), int.Parse(words[1]), words[2],
-                                            words[3], (UserType)int.Parse(words[4])));
-            }
-            uidCounter = Users.Count > 0 ? Users[Users.Count - 1].Id + 1 : 0;
-        }
-        private void SaveUsers()
-        {
-            var sb = new StringBuilder();
-            foreach (var user in Users)
-                sb.AppendLine($"{user.Id} {user.AccessLevel} {user.Name} {user.Password} {(int)user.Type}");
-            core.Fs.SysWrite(datafile, sb.ToString());
+            var path = core.Fs.GetSysPath(datafile);
+            if (!File.Exists(path))
+                File.Create(path).Close();
+
+            Users = JsonConvert.DeserializeObject<List<UserSubject>>(File.ReadAllText(path));
+            Users = Users != null ? Users : new List<UserSubject>();
         }
         public void Uninit()
         {
-            SaveUsers();
+            File.WriteAllText(core.Fs.GetSysPath(datafile), JsonConvert.SerializeObject(Users));
         }
+
 
         public UserSubject GetUserSubject(string name)
         {
@@ -112,7 +90,9 @@ namespace DAC_Model.OS
             if (!Regex.IsMatch(password, @"^[a-zA-Z0-9]{5,30}$"))
                 throw new UserMgrException("Пароль имеет неверный формат");
 
-            var user = new UserSubject(uidCounter++, 0, name, password, type);
+            int id = Users.Count > 0 ? Users[Users.Count - 1].Id + 1 : 0;
+
+            var user = new UserSubject(id, name, password, type);
             Users.Add(user);
 
             return user;

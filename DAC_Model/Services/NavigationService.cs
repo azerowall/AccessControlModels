@@ -26,28 +26,20 @@ namespace DAC_Model
         public static void Navigate(Page page) => Navigator.Navigate(page);
 
         static Page loginPage;
-        public static Page LoginPage
-        {
-            get
-            {
-                return loginPage == null ? loginPage = new Pages.Login() : loginPage;
-            }
-        }
+        public static Page LoginPage =>
+            loginPage == null ? loginPage = new Pages.Login() : loginPage;
+
         static Page explorerPage;
-        public static Page ExplorerPage
-        {
-            get
-            {
-                return explorerPage == null ? explorerPage = new Pages.Explorer() : explorerPage;
-            }
-        }
+        public static Page ExplorerPage =>
+            explorerPage == null ? explorerPage = new Pages.Explorer() : explorerPage;
+
         static Page accessTablePage;
-        public static Page AccessTablePage
-        {
-            get
-            {
-                return accessTablePage == null ? accessTablePage = new Pages.AccessTable() : accessTablePage;
-            }
-        }
+        public static Page AccessTablePage =>
+            accessTablePage == null ? accessTablePage = new Pages.AccessTable() : accessTablePage;
+
+        static Page selectRolePage;
+        public static Page SelectRolePage =>
+            selectRolePage == null ? selectRolePage = new Pages.SelectRole() : selectRolePage;
+
     }
 }

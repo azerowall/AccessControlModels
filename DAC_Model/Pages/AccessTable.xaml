@@ -12,34 +12,63 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal">
-            <Button Content="Back" Padding="5" Command="{Binding BackCommand}" />
-        </StackPanel>
+        <Button Content="Back" Command="{Binding BackCommand}" />
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <StackPanel Orientation="Horizontal">
-                <DataGrid x:Name="dgUsers" ItemsSource="{Binding Users}"
-                          AutoGenerateColumns="False">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding Name}" IsReadOnly="True" Header="Пользователь" />
-                        <DataGridTextColumn Binding="{Binding AccessLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            Header="Уровень доступа" />
-                    </DataGrid.Columns>
-                </DataGrid>
+        <TabControl Grid.Row="1">
+            <TabItem Header="Роли">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                <DataGrid x:Name="dgFiles" ItemsSource="{Binding Files}"
-                          AutoGenerateColumns="False">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding Path}" IsReadOnly="True" Header="Файл" />
-                        <DataGridTextColumn Binding="{Binding AccessLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            Header="Уровень доступа" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </StackPanel>
-        </ScrollViewer>
+                    <ListBox ItemsSource="{Binding Roles}" Grid.ColumnSpan="2"
+                             x:Name="lbRoles" MouseDoubleClick="lbRoles_MouseDoubleClick"
+                             SelectedItem="{Binding SelectedRole}" />
+                    <TextBox Text="{Binding RoleName, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Padding="5" />
+                    <Button Content="Добавить" Command="{Binding AddRoleCommand}" Grid.Row="1" Grid.Column="1" Padding="5" />
+                </Grid>
+            </TabItem>
+            <TabItem Header="Пользователи">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding UsersRoles}" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Имя пользователя" Binding="{Binding [0]}" />
+                            <DataGridTextColumn Header="Роли" Binding="{Binding [1]}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <GroupBox Header="Добавить роль" Grid.Row="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Пользователь " />
+                            <ComboBox ItemsSource="{Binding Users}"
+                                      SelectedItem="{Binding SelectedUser, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text=" Роль " />
+                            <ComboBox ItemsSource="{Binding Roles}"
+                                      SelectedItem="{Binding SelectedUserRole, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Command="{Binding AddRoleToUserCommand}" Content="Добавить" />
+                            <Button Command="{Binding RemoveRoleFromUserCommand}" Content="Удалить" />
+                        </StackPanel>
+                    </GroupBox>
+                    
+                    
+                </Grid>
+            </TabItem>
+            <TabItem Header="Матрица доступа" x:Name="tiAccessMatrix">
+                <Grid x:Name="gAccessMatrix" ShowGridLines="True" />
+            </TabItem>
+        </TabControl>
     </Grid>
 
 </Page>

@@ -38,7 +38,7 @@ namespace DAC_Model.ViewModels
             {
                 OsService.GetOS().Login(Name, Password);
                 Name = Password = string.Empty;
-                NavigationService.Navigate(NavigationService.ExplorerPage);
+                NavigationService.Navigate(NavigationService.SelectRolePage);
             }
             catch (OS.UserMgrException e)
             {
@@ -52,7 +52,7 @@ namespace DAC_Model.ViewModels
                 OsService.GetOS().Umgr.Registrate(Name, Password);
                 OsService.GetOS().Login(Name, Password);
                 Name = Password = string.Empty;
-                NavigationService.Navigate(NavigationService.ExplorerPage);
+                //NavigationService.Navigate(NavigationService.ExplorerPage);
             }
             catch (OS.UserMgrException e)
             {
